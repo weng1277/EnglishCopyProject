@@ -9,29 +9,36 @@
 *.out
 
 # Dependencies
+venv/
+.venv/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
 env/
-venv/
-.venv/
-.conda/
+env.bak/
+venv.bak/
 
 # Build directories
 build/
 dist/
-target/
-.out/
+*.egg-info/
+.coverage
+coverage/
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.tox/
 
 # Logs and temp files
 *.log
 *.tmp
 *.swp
 *.swo
+*~
 
-# Environment
+# Environment variables
 .env
 .env.local
 *.env.*
@@ -41,17 +48,10 @@ target/
 .idea/
 *.swp
 *.swo
-
-# System files
 .DS_Store
 Thumbs.db
 
-# Coverage reports
-coverage/
-htmlcov/
-.coverage
-
-# Compression files
+# Compressed files
 *.zip
 *.gz
 *.tar

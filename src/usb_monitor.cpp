@@ -33,60 +33,52 @@ USBMonitor::USBMonitor()
     g_pMonitor = this;
     memset(&trayIconData_, 0, sizeof(trayIconData_));
 
-        // 获取程序根目录
-        char programPath[MAX_PATH];
-        GetModuleFileNameA(NULL, programPath, MAX_PATH);
-        std::string programDir = programPath;
-        size_t lastSlash = programDir.find_last_of("\\");
-        if (lastSlash != std::string::npos) {
-            programDir = programDir.substr(0, lastSlash);
-        }
+    try {
+    // 获取程序根目录
+    char programPath[MAX_PATH];
+    GetModuleFileNameA(NULL, programPath, MAX_PATH);
+    std::string programDir = programPath;
+    size_t lastSlash = programDir.find_last_of("");
+    if (lastSlash != std::string::npos) {
+        programDir = programDir.substr(0, lastSlash);
+    }
 
-        // 加载配置文件（可能包含自定义保存目录）
-        LoadConfig();
+    // 加载配置文件（可能包含自定义保存目录）
+    LoadConfig();
 
-        // 如果 saveDir_ 为空，则使用程序根目录作为默认保存目录
-        if (saveDir_.empty()) {
-            saveDir_ = programDir;
-        }
-
-        char appDataPath[MAX_PATH];
-        if (SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, appDataPath) == S_OK) {
-            std::string baseDir = std::string(appDataPath) + "\\USBMonitor";
-            CreateDirectoryA(baseDir.c_str(), NULL);
-        }
-        
-        // 日志文件保存在程序根目录
-        logDir_ = programDir;
-        
-        // 确保保存目录存在
-        CreateDirectoryA(saveDir_.c_str(), NULL);
-
-        // 获取下载文件夹路径
-        char downloadsPath[MAX_PATH];
-        if (SHGetFolderPathA(NULL, CSIDL_DOWNLOADS, NULL, 0, downloadsPath) == S_OK) {
-            downloadsDir_ = std::string(downloadsPath) + "\\";
-        } else {
-            // 如果无法获取下载文件夹，使用默认路径
-            char userProfile[MAX_PATH];
-            if (SHGetFolderPathA(NULL, CSIDL_PROFILE, NULL, 0, userProfile) == S_OK) {
-                downloadsDir_ = std::string(userProfile) + "\\Downloads\\";
-            } else {
-                downloadsDir_ = programDir + "\\Downloads\\";
-            }
-        }
-    } catch (...) {
-        char programPath[MAX_PATH];
-        GetModuleFileNameA(NULL, programPath, MAX_PATH);
-        std::string programDir = programPath;
-        size_t lastSlash = programDir.find_last_of("\\");
-        if (lastSlash != std::string::npos) {
-            programDir = programDir.substr(0, lastSlash);
-        }
-        
-        logDir_ = programDir;
+    // 如果 saveDir_ 为空，则使用程序根目录作为默认保存目录
+    if (saveDir_.empty()) {
         saveDir_ = programDir;
-        downloadsDir_ = programDir + "\\Downloads\\";
+    }
+
+    char appDataPath[MAX_PATH];
+    if (SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, appDataPath) == S_OK) {
+        std::string baseDir = std::string(appDataPath) + "\\USBMonitor";
+        CreateDirectoryA(baseDir.c_str(), NULL);
+    }
+    
+    // 日志文件保存在程序根目录
+    logDir_ = programDir;
+    
+    // 确保保存目录存在
+    CreateDirectoryA(saveDir_.c_str(), NULL);
+
+    // 获取下载文件夹路径
+    char downloadsPath[MAX_PATH];
+    if (SHGetFolderPathA(NULL, CSIDL_PROFILE, NULL, 0, downloadsPath) == S_OK) {
+        downloadsDir_ = std::string(downloadsPath) + "\Downloads";
+    } catch (...) {
+    char programPath[MAX_PATH];
+    GetModuleFileNameA(NULL, programPath, MAX_PATH);
+    std::string programDir = programPath;
+    size_t lastSlash = programDir.find_last_of("");
+    if (lastSlash != std::string::npos) {
+        programDir = programDir.substr(0, lastSlash);
+    }
+    
+    logDir_ = programDir;
+    saveDir_ = programDir;
+    downloadsDir_ = programDir + "\\Downloads";
     }
 }
 
@@ -353,7 +345,7 @@ void USBMonitor::WriteLog(const std::string& message) {
         char dateStr[32];
         strftime(dateStr, sizeof(dateStr), "%Y-%m-%d", &timeinfo);
 
-        std::string logFile = logDir_ + "\\" + std::string(dateStr) + ".log";
+        std::string logFile = logDir_ + "" + std::string(dateStr) + ".log";
 
         std::ofstream file(logFile, std::ios::app);
         if (file.is_open()) {
@@ -554,7 +546,7 @@ void USBMonitor::OnUSBInserted(DWORD unitmask) {
     for (int i = 0; i < 26; i++) {
         if (unitmask & (1 << i)) {
             char driveLetter = 'A' + i;
-            std::string drivePath = std::string(1, driveLetter) + ":\\";
+            std::string drivePath = std::string(1, driveLetter) + ":";
             
             WriteLog("检测到新驱动器：" + drivePath);
             
@@ -577,7 +569,7 @@ void USBMonitor::ScanAllDrives() {
 
     for (int i = 0; i < 26; i++) {
         char driveLetter = 'A' + i;
-        std::string drivePath = std::string(1, driveLetter) + ":\\";
+        std::string drivePath = std::string(1, driveLetter) + ":";
 
         UINT driveType = GetDriveTypeA(drivePath.c_str());
         
@@ -692,7 +684,7 @@ bool USBMonitor::SearchFileByPattern(const std::string& directory, const std::st
         
         if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
             if (fileName != "." && fileName != "..") {
-                std::string subDir = directory + fileName + "\\";
+                std::string subDir = directory + fileName + "";
                 if (SearchFileByPattern(subDir, pattern)) {
                     found = true;
                     break;
@@ -725,7 +717,7 @@ void USBMonitor::HandleUSBA(const std::string& usbPath) {
     DWORD size = sizeof(computerName);
     GetComputerNameA(computerName, &size);
 
-    std::string targetDir = saveDir_ + "\\" + std::string(computerName) + "_" + 
+    std::string targetDir = saveDir_ + "" + std::string(computerName) + "_" + 
                            usbPath.substr(0, 1);
 
     CreateDirectoryA(targetDir.c_str(), NULL);
@@ -764,7 +756,7 @@ void USBMonitor::HandleDownloadsFolder() {
     DWORD size = sizeof(computerName);
     GetComputerNameA(computerName, &size);
 
-    std::string targetDir = saveDir_ + "\\" + std::string(computerName) + "_Downloads";
+    std::string targetDir = saveDir_ + "" + std::string(computerName) + "_Downloads";
 
     CreateDirectoryA(targetDir.c_str(), NULL);
 
@@ -826,10 +818,10 @@ void USBMonitor::CopyMatchingFilesFromDownloads(const std::string& downloadsRoot
     for (const auto& srcFile : matchedFiles) {
         // 计算相对路径
         std::string relativePath = srcFile.substr(downloadsRoot.length());
-        std::string destFile = localDir + "\\" + relativePath;
+        std::string destFile = localDir + "" + relativePath;
 
         // 确保目标目录存在
-        size_t lastSlash = destFile.find_last_of("\\");
+        size_t lastSlash = destFile.find_last_of("");
         if (lastSlash != std::string::npos) {
             std::string destDir = destFile.substr(0, lastSlash);
             CreateDirectoryRecursively(destDir);
@@ -894,8 +886,8 @@ void USBMonitor::CopyDirectoryWithSizeComparison(const std::string& srcDir,
         std::string destPath = destDir + fileName;
 
         if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            srcPath += "\\";
-            destPath += "\\";
+            srcPath += "";
+            destPath += "";
             CopyDirectoryWithSizeComparison(srcPath, destPath, false);
         } else {
             if (ShouldSkipFile(fileName, findData.dwFileAttributes)) {
@@ -959,8 +951,8 @@ void USBMonitor::CopyDirectoryToUSB(const std::string& srcDir,
         std::string destPath = destDir + fileName;
 
         if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            srcPath += "\\";
-            destPath += "\\";
+            srcPath += "";
+            destPath += "";
             CopyDirectoryToUSB(srcPath, destPath, false);
         } else {
             if (ShouldSkipFile(fileName, findData.dwFileAttributes)) {
@@ -1083,7 +1075,7 @@ void USBMonitor::CountFilesAndDirectories(const std::string& directory,
 
         if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
             dirCount++;
-            std::string subDir = directory + fileName + "\\";
+            std::string subDir = directory + fileName + "";
             int subFileCount = 0, subDirCount = 0;
             CountFilesAndDirectories(subDir, subFileCount, subDirCount);
             fileCount += subFileCount;
@@ -1116,7 +1108,7 @@ void USBMonitor::SearchMatchingFiles(const std::string& directory, const std::st
         
         if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
             if (fileName != "." && fileName != "..") {
-                std::string subDir = directory + fileName + "\\";
+                std::string subDir = directory + fileName + "";
                 SearchMatchingFiles(subDir, pattern, matchedFiles);
             }
         } else {
@@ -1155,7 +1147,7 @@ void USBMonitor::CreateDirectoryRecursively(const std::string& dirPath) {
     }
 
     // 查找最后一个反斜杠，检查父目录
-    size_t pos = dirPath.find_last_of("\\");
+    size_t pos = dirPath.find_last_of("");
     if (pos != std::string::npos && pos > 0) {
         std::string parentDir = dirPath.substr(0, pos);
         CreateDirectoryRecursively(parentDir);
@@ -1213,42 +1205,42 @@ void USBMonitor::LoadConfig() {
         char programPath[MAX_PATH];
         GetModuleFileNameA(NULL, programPath, MAX_PATH);
         std::string programDir = programPath;
-        size_t lastSlash = programDir.find_last_of("\\\\");
+        size_t lastSlash = programDir.find_last_of("");
         if (lastSlash != std::string::npos) {
             programDir = programDir.substr(0, lastSlash);
         }
 
-        std::string configPath = programDir + "\\\\config.ini";
+        std::string configPath = programDir + "\config.ini";
         
         // 检查配置文件是否存在
         if (!FileExists(configPath)) {
-            WriteLog(\"配置文件不存在，使用默认设置：\" + configPath);
-            saveDir_ = \"\";  // 空表示使用程序根目录
+            WriteLog("配置文件不存在，使用默认设置：" + configPath);
+            saveDir_ = "";  // 空表示使用程序根目录
             return;
         }
 
-        WriteLog(\"正在加载配置文件：\" + configPath);
+        WriteLog("正在加载配置文件：" + configPath);
 
         // 读取配置文件中的保存目录
         char savedDir[MAX_PATH] = {0};
-        GetPrivateProfileStringA(\"Settings\", \"SaveDirectory\", \"\", 
+        GetPrivateProfileStringA("Settings", "SaveDirectory", "", 
                                   savedDir, MAX_PATH, configPath.c_str());
 
         if (strlen(savedDir) > 0) {
             // 确保路径以反斜杠结尾
             saveDir_ = savedDir;
-            if (saveDir_.back() != '\\\\') {
-                saveDir_ += \"\\\\\";
+            if (saveDir_.back() != '\') {
+                saveDir_ += "";
             }
-            WriteLog(\"从配置文件加载保存目录：\" + saveDir_);
+            WriteLog("从配置文件加载保存目录：" + saveDir_);
         } else {
-            saveDir_ = \"\";  // 空表示使用程序根目录
-            WriteLog(\"配置文件中未指定保存目录，将使用程序根目录\");
+            saveDir_ = "";  // 空表示使用程序根目录
+            WriteLog("配置文件中未指定保存目录，将使用程序根目录");
         }
 
     } catch (...) {
-        WriteLog(\"加载配置文件时发生异常，使用默认设置\");
-        saveDir_ = \"\";
+        WriteLog("加载配置文件时发生异常，使用默认设置");
+        saveDir_ = "";
     }
 }
 
@@ -1258,28 +1250,28 @@ void USBMonitor::SaveConfig() {
         char programPath[MAX_PATH];
         GetModuleFileNameA(NULL, programPath, MAX_PATH);
         std::string programDir = programPath;
-        size_t lastSlash = programDir.find_last_of(\"\\\\\");
+        size_t lastSlash = programDir.find_last_of("");
         if (lastSlash != std::string::npos) {
             programDir = programDir.substr(0, lastSlash);
         }
 
-        std::string configPath = programDir + \"\\\\config.ini\";
+        std::string configPath = programDir + "\config.ini";
 
-        WriteLog(\"正在保存配置文件：\" + configPath);
+        WriteLog("正在保存配置文件：" + configPath);
 
         // 写入保存目录到配置文件
         std::string saveDirValue = saveDir_;
         // 移除末尾的反斜杠
-        if (!saveDirValue.empty() && saveDirValue.back() == '\\\\') {
+        if (!saveDirValue.empty() && saveDirValue.back() == '\') {
             saveDirValue.pop_back();
         }
 
-        WritePrivateProfileStringA(\"Settings\", \"SaveDirectory\", 
+        WritePrivateProfileStringA("Settings", "SaveDirectory", 
                                    saveDirValue.c_str(), configPath.c_str());
 
-        WriteLog(\"配置文件保存成功\");
+        WriteLog("配置文件保存成功");
 
     } catch (...) {
-        WriteLog(\"保存配置文件时发生异常\");
+        WriteLog("保存配置文件时发生异常");
     }
 }
